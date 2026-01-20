@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>São Judas +Fácil</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1e293b; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #64748b; 
+        }
+
+        /* Animações simples */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .spin-slow {
+            animation: spin 2s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans antialiased selection:bg-blue-500 selection:text-white">
+
+    <!-- Header -->
+    <header class="bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-20 shadow-lg">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <!-- LOGO SÃO JUDAS -->
+                <img src="logo.png" alt="Logo São Judas" class="h-12 w-auto object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+                <!-- Fallback caso a logo não carregue -->
+                <div class="hidden bg-blue-600 p-2 rounded-lg">
+                    <i data-lucide="send" class="text-white w-6 h-6"></i>
+                </div>
+                
+                <div>
+                    <h1 class="text-xl font-bold text-white">São Judas +Fácil</h1>
+                    <p class="text-xs text-slate-400">Feito por São Judas T.I.</p>
+                </div>
+            </div>
+            
+            <div class="flex gap-2">
+                <button id="btn-start" onclick="startCampaign()" class="flex items-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full font-medium transition-all shadow-lg shadow-emerald-900/20 active:scale-95">
+                    <i data-lucide="play" class="w-4 h-4"></i> Iniciar Envios
+                </button>
+                <button id="btn-stop" onclick="stopCampaign()" class="hidden flex items-center gap-2 px-6 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-full font-medium transition-all shadow-lg shadow-rose-900/20 active:scale-95">
+                    <i data-lucide="pause" class="w-4 h-4"></i> Parar
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- COLUNA ESQUERDA - Configurações -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Status Card -->
+            <div id="status-card" class="bg-slate-800 rounded-xl border border-slate-700 p-6 shadow-xl relative overflow-hidden transition-colors duration-500">
+                <!-- Estado: Parado -->
+                <div id="status-idle" class="flex flex-col items-center justify-center py-8 text-slate-500 gap-3">
+                    <i data-lucide="rocket" class="w-16 h-16 text-blue-500/20"></i>
+                    <p class="text-lg font-medium text-slate-300">Pronto para começar</p>
+                    <p class="text-sm">Configure as mensagens, adicione os contatos e inicie.</p>
+                </div>
+
+                <!-- Estado: Rodando -->
+                <div id="status-running" class="hidden">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-slate-700">
+                        <div id="progress-bar" class="h-full bg-blue-500 transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                                <i data-lucide="activity" class="text-blue-400 w-5 h-5 animate-pulse"></i>
+                                Enviando Agora
+                            </h3>
+                            <p id="next-action-text" class="text-blue-200/70 text-sm mt-1">Iniciando...</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-3xl font-bold text-white tracking-tight"><span id="percent-complete">0</span>%</div>
+                            <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Concluído</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-lg text-center">
+                            <p class="text-xs text-emerald-400 uppercase font-bold mb-1">Enviados</p>
+                            <p id="count-sent" class="text-2xl text-white font-bold">0</p>
+                        </div>
+                        <div class="bg-slate-700/30 border border-slate-600/30 p-3 rounded-lg text-center">
+                            <p class="text-xs text-slate-400 uppercase font-bold mb-1">Total</p>
+                            <p id="count-total" class="text-2xl text-white font-bold">0</p>
+                        </div>
+                        <div class="bg-rose-500/10 border border-rose-500/20 p-3 rounded-lg text-center">
+                            <p class="text-xs text-rose-400 uppercase font-bold mb-1">Falhas</p>
+                            <p id="count-failed" class="text-2xl text-white font-bold">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navegação de Abas -->
+            <div class="bg-slate-800 rounded-xl border border-slate-700 shadow-sm overflow-hidden">
+                <div class="flex border-b border-slate-700">
+                    <button onclick="switchTab('messages')" id="tab-btn-messages" class="flex-1 py-4 text-sm font-medium flex justify-center items-center gap-2 transition-colors bg-slate-700/50 text-blue-400 border-b-2 border-blue-400">
+                        <i data-lucide="message-square" class="w-4 h-4"></i> Mensagens
+                    </button>
+                    <button onclick="switchTab('contacts')" id="tab-btn-contacts" class="flex-1 py-4 text-sm font-medium flex justify-center items-center gap-2 transition-colors text-slate-400 hover:text-slate-200">
+                        <i data-lucide="users" class="w-4 h-4"></i> Contatos
+                    </button>
+                </div>
+
+                <div class="p-6">
+                    <!-- ABA 1: MENSAGENS -->
+                    <div id="tab-messages" class="space-y-6">
+                        <!-- Upload Anexo -->
+                        <div class="space-y-2 pb-4 border-b border-slate-700">
+                            <label class="text-sm font-medium text-slate-300 flex items-center gap-2">
+                                <i data-lucide="cloud" class="w-4 h-4"></i> Anexar PDF (Opcional)
+                            </label>
+                            
+                            <!-- Área de Upload -->
+                            <div id="upload-area" onclick="document.getElementById('file-upload').click()" class="border-2 border-dashed border-slate-600 rounded-lg p-6 flex flex-col items-center justify-center text-slate-400 hover:border-blue-500 hover:bg-slate-800/50 cursor-pointer transition-all">
+                                <i data-lucide="upload" class="w-8 h-8 mb-2 text-slate-500"></i>
+                                <span class="text-sm font-medium" id="upload-text">Clique para selecionar arquivo</span>
+                                <span class="text-xs text-slate-600 mt-1">O arquivo será preparado automaticamente</span>
+                                <input type="file" id="file-upload" class="hidden" onchange="handleSupabaseUpload(this)">
+                            </div>
+
+                            <!-- Área de Arquivo Carregado (Hidden by default) -->
+                            <div id="file-display" class="hidden bg-indigo-900/20 border border-indigo-500/30 rounded-lg p-3 flex flex-col gap-2">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="bg-indigo-600/20 p-2 rounded">
+                                            <i data-lucide="file-text" class="text-indigo-400 w-5 h-5"></i>
+                                        </div>
+                                        <div>
+                                            <p id="file-name-display" class="text-sm text-white font-medium truncate max-w-[200px]">arquivo.pdf</p>
+                                            <p class="text-xs text-indigo-300 flex items-center gap-1">
+                                                <i data-lucide="check-circle" class="w-3 h-3"></i> Pronto para envio
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button onclick="clearAttachment()" class="p-1 hover:bg-rose-500/20 rounded text-slate-400 hover:text-rose-400 transition-colors">
+                                        <i data-lucide="x" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Variações -->
+                        <div>
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+                                <div>
+                                    <h3 class="text-sm font-medium text-slate-300">Variações de Mensagem</h3>
+                                    <p class="text-xs text-slate-500">Escreva a primeira e peça para a IA criar as outras.</p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="addVariation()" class="text-xs flex items-center gap-1 bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded transition-colors">
+                                        <i data-lucide="plus" class="w-3 h-3"></i> Adicionar Manual
+                                    </button>
+                                    <button onclick="generateAiVariations()" id="btn-ai-generate" class="text-xs flex items-center gap-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-3 py-1.5 rounded transition-all shadow-lg shadow-purple-900/20">
+                                        <i data-lucide="sparkles" class="w-3 h-3"></i> Criar com IA (Groq)
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div id="variations-container" class="space-y-4">
+                                <!-- Variações serão injetadas aqui via JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ABA 2: CONTATOS -->
+                    <div id="tab-contacts" class="hidden space-y-4 h-full">
+                        <div class="flex justify-between items-center">
+                            <label class="text-sm font-medium text-slate-300">Lista de Números</label>
+                            <div class="flex gap-2">
+                                <button onclick="smartCleanContacts()" class="text-xs flex items-center gap-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-3 py-1.5 rounded transition-all shadow-lg shadow-emerald-900/20" title="Corrige +55 e remove inválidos">
+                                    <i data-lucide="wand-2" class="w-3 h-3"></i> Higienizar Lista
+                                </button>
+                                <input type="file" id="contact-upload" accept=".csv,.json,.vcf" class="hidden" onchange="handleContactUpload(this)">
+                                <button onclick="document.getElementById('contact-upload').click()" class="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded flex items-center gap-2 transition-colors">
+                                    <i data-lucide="file-up" class="w-3 h-3"></i> Importar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <textarea id="contacts-input" oninput="updateContactCount()" placeholder="5511999999999&#10;5511888888888&#10;..." class="w-full h-80 bg-slate-900 border border-slate-700 rounded-lg p-4 text-slate-200 font-mono text-sm focus:border-blue-500 outline-none resize-none"></textarea>
+                        
+                        <div class="bg-slate-900/50 p-3 rounded-lg border border-slate-700 flex justify-between items-center">
+                             <div class="text-xs text-slate-400">
+                                Total: <span id="contact-count" class="text-white font-bold">0</span> contatos
+                             </div>
+                             <div class="text-xs text-emerald-400 font-medium flex items-center gap-1">
+                                <i data-lucide="timer" class="w-3 h-3"></i>
+                                <span id="estimated-time">Tempo Estimado: 0 min</span>
+                             </div>
+                        </div>
+                        
+                        <div class="bg-indigo-900/20 border border-indigo-500/20 p-3 rounded-lg flex items-start gap-2 text-xs text-indigo-300">
+                            <i data-lucide="shield-check" class="w-4 h-4 shrink-0 mt-0.5"></i>
+                            <p>Proteção Ativa: Os envios incluem pausas de segurança automáticas já calculadas no tempo estimado acima.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUNA DIREITA - Monitoramento -->
+        <div class="lg:col-span-1">
+            <div class="bg-slate-800 rounded-xl border border-slate-700 shadow-sm flex flex-col h-[600px] sticky top-24">
+                <div class="p-4 border-b border-slate-700 bg-slate-800/95 backdrop-blur z-10 flex justify-between items-center">
+                    <h3 class="font-semibold text-slate-200 flex items-center gap-2">
+                        <i data-lucide="activity" class="text-blue-400 w-4 h-4"></i> 
+                        Monitoramento
+                    </h3>
+                    <button onclick="clearLogs()" class="text-xs text-slate-500 hover:text-white transition-colors">Limpar</button>
+                </div>
+                
+                <div id="logs-container" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                    <div class="h-full flex flex-col items-center justify-center text-slate-600 gap-2 opacity-50">
+                        <i data-lucide="activity" class="w-10 h-10"></i>
+                        <p class="text-sm">O histórico aparecerá aqui...</p>
+                    </div>
+                </div>
+                
+                <div class="p-3 bg-slate-900 border-t border-slate-700 text-[10px] text-slate-500 text-center">
+                    São Judas +Fácil &copy; 2026
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- SCRIPTS -->
+    <script>
+        // --- CONSTANTES ---
+        const WEBHOOK_URL = "https://criadordigital-n8n-webhook.zcepry.easypanel.host/webhook/saojudascont";
+        
+        // --- CREDENCIAIS SUPABASE HARDCODED ---
+        const SUPABASE_URL = "https://fcibijetfwdmidytrily.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZjaWJpamV0ZndkbWlkeXRyaWx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4NDMyOTksImV4cCI6MjA4NDQxOTI5OX0.jf0baf8kkbv6xHTe_XI2NxzTPHbRVVokq9sguY53jTQ";
+        const BUCKET_NAME = "arquivos";
+
+        // --- API KEY DA IA (GROQ) ---
+        const GROQ_API_KEY = "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";
+
+        // --- CONFIGURAÇÃO DE SEGURANÇA (SAFE MODE) ---
+        const SAFE_DELAY_SECONDS = 25; 
+        const SAFE_BATCH_SIZE = 15;
+        const SAFE_BATCH_PAUSE_MINUTES = 3;
+
+        // --- ESTADO GLOBAL ---
+        let messageVariations = [
+            { id: 1, text: "Olá! Tudo bem? Segue o documento." },
+            { id: 2, text: "Oi! Como vai? Aqui está o PDF." }
+        ];
+        let fileUrl = "";
+        let uploadedFileName = "";
+        let isRunning = false;
+        let shouldStop = false;
+
+        // --- INICIALIZAÇÃO ---
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            renderVariations();
+        });
+
+        // --- FUNÇÕES DE UI (ABAS) ---
+        function switchTab(tabName) {
+            ['messages', 'contacts'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                const btn = document.getElementById(`tab-btn-${t}`);
+                btn.className = "flex-1 py-4 text-sm font-medium flex justify-center items-center gap-2 transition-colors text-slate-400 hover:text-slate-200";
+            });
+
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-btn-${tabName}`);
+            activeBtn.className = "flex-1 py-4 text-sm font-medium flex justify-center items-center gap-2 transition-colors bg-slate-700/50 text-blue-400 border-b-2 border-blue-400";
+        }
+
+        // --- IA E MENSAGENS ---
+        function renderVariations() {
+            const container = document.getElementById('variations-container');
+            container.innerHTML = '';
+
+            messageVariations.forEach((msg, index) => {
+                const div = document.createElement('div');
+                div.className = 'relative group fade-in';
+                div.innerHTML = `
+                    <div class="absolute -left-3 top-3 text-xs text-slate-500 font-mono rotate-90 hidden sm:block">#${index + 1}</div>
+                    <textarea 
+                        id="msg-var-${msg.id}"
+                        oninput="updateVariationText(${msg.id}, this.value)"
+                        placeholder="Mensagem Variação ${index + 1}..."
+                        class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-200 focus:border-blue-500 outline-none min-h-[100px] resize-y"
+                    >${msg.text}</textarea>
+                    ${messageVariations.length > 1 ? `
+                        <button onclick="removeVariation(${msg.id})" class="absolute top-2 right-2 p-1 text-slate-600 hover:text-rose-500 bg-slate-800 rounded opacity-0 group-hover:opacity-100 transition-all">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    ` : ''}
+                `;
+                container.appendChild(div);
+            });
+            lucide.createIcons();
+        }
+
+        function addVariation() {
+            const newId = messageVariations.length > 0 ? Math.max(...messageVariations.map(m => m.id)) + 1 : 1;
+            messageVariations.push({ id: newId, text: "" });
+            renderVariations();
+        }
+
+        function removeVariation(id) {
+            if (messageVariations.length > 1) {
+                messageVariations = messageVariations.filter(m => m.id !== id);
+                renderVariations();
+            }
+        }
+
+        function updateVariationText(id, text) {
+            const v = messageVariations.find(m => m.id === id);
+            if (v) v.text = text;
+        }
+
+        // FUNÇÃO DE IA PARA GERAR MENSAGENS (GROQ API)
+        async function generateAiVariations() {
+            const baseMessage = messageVariations[0]?.text;
+            if (!baseMessage || baseMessage.trim().length < 5) {
+                alert("Escreva uma mensagem base na Variação #1 primeiro (mínimo 5 caracteres).");
+                return;
+            }
+
+            if (!GROQ_API_KEY) {
+                alert("Erro: API Key não configurada no código.");
+                return;
+            }
+
+            const btn = document.getElementById('btn-ai-generate');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-3 h-3 spin-slow"></i> Criando...`;
+            lucide.createIcons();
+            
+            try {
+                const prompt = `Atue como um especialista em comunicação empresarial humana e direta. Reescreva a mensagem abaixo de 3 formas diferentes para enviar no WhatsApp.
+
+                Diretrizes de Estilo:
+                - Tom: Profissional, educado, porém casual e direto (estilo de conversa real no WhatsApp).
+                - O que EVITAR: Linguagem robótica, excesso de emojis, palavras difíceis, formalidade exagerada ("Prezado", "Cordialmente") ou empolgação artificial.
+                - Objetivo: O texto deve parecer ter sido digitado manualmente por uma pessoa da equipe, não por um bot.
+                
+                Regras de Formatação:
+                1. Retorne APENAS as 3 variações de texto.
+                2. Separe cada variação EXATAMENTE com os caracteres "|||".
+                3. Não coloque aspas, números (1., 2.) ou introduções.
+                
+                Mensagem Original: "${baseMessage}"`;
+
+                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${GROQ_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        messages: [{ role: "user", content: prompt }],
+                        model: "llama-3.3-70b-versatile",
+                        temperature: 0.6 // Temperatura um pouco menor para ser mais consistente e menos "criativo/alucinado"
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    console.error("Erro API Groq:", data.error);
+                    throw new Error(data.error.message || "Erro desconhecido na API Groq");
+                }
+                
+                if (!data.choices || data.choices.length === 0) {
+                    throw new Error("A IA não retornou nenhuma variação.");
+                }
+
+                const generatedText = data.choices[0].message.content;
+                console.log("Resposta IA:", generatedText); // Debug
+                
+                // Processa a resposta usando o separador |||
+                let newVariations = generatedText.split('|||')
+                    .map(v => v.trim())
+                    .filter(v => v.length > 5); // Filtra vazios
+
+                // Fallback: Se o separador falhar, tenta por quebra de linha
+                if (newVariations.length < 2) {
+                    newVariations = generatedText.split(/\n+/).filter(line => line.trim().length > 5);
+                }
+
+                // Limpa variações antigas (exceto a primeira)
+                messageVariations = [messageVariations[0]];
+
+                // Adiciona as novas
+                newVariations.forEach(text => {
+                    // Limpeza extra de marcadores comuns (1. - *) e aspas que podem ter sobrado
+                    const cleanText = text.replace(/^[\d\-\.\*]+\s*/, '').replace(/^"|"$/g, '').trim(); 
+                    const newId = Math.max(...messageVariations.map(m => m.id)) + 1;
+                    messageVariations.push({ id: newId, text: cleanText });
+                });
+
+                renderVariations();
+                addLog('success', '3 Variações geradas!');
+
+            } catch (error) {
+                console.error(error);
+                alert("Erro ao criar mensagens: " + error.message);
+                addLog('error', 'Falha na IA: ' + error.message);
+            } finally {
+                btn.innerHTML = originalText;
+                lucide.createIcons();
+            }
+        }
+
+        // --- CONTATOS & HIGIENIZAÇÃO ---
+        function smartCleanContacts() {
+            const textarea = document.getElementById('contacts-input');
+            const rawText = textarea.value;
+            
+            if (!rawText.trim()) {
+                alert("A lista de contatos está vazia.");
+                return;
+            }
+
+            const lines = rawText.split(/[\n,;]+/);
+            let validContacts = [];
+            let removedCount = 0;
+            let fixedCount = 0;
+
+            lines.forEach(line => {
+                let cleanNumber = line.replace(/\D/g, '');
+                
+                if (cleanNumber.length < 10) {
+                    removedCount++;
+                    return;
+                }
+
+                if (cleanNumber.length === 10 || cleanNumber.length === 11) {
+                    cleanNumber = '55' + cleanNumber;
+                    fixedCount++;
+                }
+
+                if ((cleanNumber.length === 12 || cleanNumber.length === 13) && cleanNumber.startsWith('55')) {
+                    validContacts.push(cleanNumber);
+                } else if (cleanNumber.length > 13) {
+                    removedCount++;
+                } else if (!cleanNumber.startsWith('55')) {
+                    validContacts.push(cleanNumber); 
+                }
+            });
+
+            textarea.value = validContacts.join('\n');
+            updateContactCount();
+            
+            let logMsg = `Lista Higienizada! ${validContacts.length} válidos.`;
+            if (fixedCount > 0) logMsg += ` ${fixedCount} corrigidos (+55).`;
+            if (removedCount > 0) logMsg += ` ${removedCount} removidos.`;
+            
+            addLog('success', logMsg);
+            alert(logMsg);
+        }
+
+        function updateContactCount() {
+            const text = document.getElementById('contacts-input').value;
+            const contacts = text.split(/[\n,;]+/).filter(c => c.trim().length > 0);
+            const count = contacts.length;
+            document.getElementById('contact-count').innerText = count;
+            calculateEstimatedTime(count);
+        }
+
+        function calculateEstimatedTime(count) {
+            if (count === 0) {
+                document.getElementById('estimated-time').innerText = "Tempo Estimado: 0 min";
+                return;
+            }
+            const totalMsgDelaySeconds = count * SAFE_DELAY_SECONDS;
+            const numPauses = Math.floor((count - 1) / SAFE_BATCH_SIZE);
+            const totalPauseSeconds = numPauses * (SAFE_BATCH_PAUSE_MINUTES * 60);
+            const totalSeconds = totalMsgDelaySeconds + totalPauseSeconds;
+            
+            let timeString = "";
+            if (totalSeconds < 60) {
+                timeString = `${totalSeconds} seg`;
+            } else if (totalSeconds < 3600) {
+                timeString = `${Math.ceil(totalSeconds / 60)} min`;
+            } else {
+                const hours = Math.floor(totalSeconds / 3600);
+                const mins = Math.ceil((totalSeconds % 3600) / 60);
+                timeString = `${hours}h ${mins}min`;
+            }
+            document.getElementById('estimated-time').innerText = `Tempo Estimado: ~${timeString}`;
+        }
+
+        function handleContactUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = e.target.result;
+                let extracted = [];
+                
+                if (file.name.endsWith('.json')) {
+                    try {
+                        const json = JSON.parse(content);
+                        if (Array.isArray(json)) extracted = json.map(i => i.phone || i.telefone || i.celular || i.mobile || (typeof i === 'string' ? i : '')).filter(Boolean);
+                    } catch(e) { alert('Erro JSON'); }
+                } else if (file.name.endsWith('.csv')) {
+                    content.split('\n').forEach(row => {
+                        const m = row.match(/\d{8,}/);
+                        if(m) extracted.push(m[0]);
+                    });
+                } else if (file.name.endsWith('.vcf')) {
+                    const m = content.match(/TEL.*:([\d\+\-\s]+)/g);
+                    if(m) extracted = m.map(l => l.replace(/[^0-9]/g, ''));
+                }
+
+                if (extracted.length > 0) {
+                    const clean = extracted.map(n => n.replace(/\D/g, '')).join('\n');
+                    const current = document.getElementById('contacts-input').value;
+                    document.getElementById('contacts-input').value = current ? current + '\n' + clean : clean;
+                    updateContactCount();
+                    addLog('success', `Importado(s) ${extracted.length} contatos.`);
+                } else {
+                    addLog('warning', 'Nenhum número encontrado.');
+                }
+            };
+            reader.readAsText(file);
+            input.value = '';
+        }
+
+        // --- UPLOAD SUPABASE ---
+        async function handleSupabaseUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const uploadText = document.getElementById('upload-text');
+            const originalText = uploadText.innerText;
+            uploadText.innerText = "Enviando para nuvem...";
+            addLog('system', `Iniciando upload: ${file.name}`);
+
+            try {
+                const cleanUrl = SUPABASE_URL.replace(/\/$/, "");
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                
+                const endpoint = `${cleanUrl}/storage/v1/object/${BUCKET_NAME}/${fileName}`;
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'apikey': SUPABASE_KEY,
+                        'Content-Type': file.type,
+                        'x-upsert': 'true'
+                    },
+                    body: file
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.message || 'Erro upload');
+                }
+
+                const publicUrl = `${cleanUrl}/storage/v1/object/public/${BUCKET_NAME}/${fileName}`;
+                
+                fileUrl = publicUrl;
+                uploadedFileName = file.name;
+                
+                document.getElementById('upload-area').classList.add('hidden');
+                document.getElementById('file-display').classList.remove('hidden');
+                document.getElementById('file-name-display').innerText = file.name;
+
+                addLog('success', 'Upload concluído!');
+                addLog('info', `Arquivo pronto.`);
+
+            } catch (error) {
+                console.error(error);
+                addLog('error', `Erro upload: ${error.message}`);
+                alert(`Erro Supabase: ${error.message}`);
+            } finally {
+                uploadText.innerText = originalText;
+                input.value = '';
+            }
+        }
+
+        function clearAttachment() {
+            fileUrl = "";
+            uploadedFileName = "";
+            document.getElementById('upload-area').classList.remove('hidden');
+            document.getElementById('file-display').classList.add('hidden');
+            addLog('system', 'Anexo removido.');
+        }
+
+        // --- LOGS & EXECUÇÃO ---
+        function addLog(type, message) {
+            const container = document.getElementById('logs-container');
+            if (container.children.length === 1 && container.children[0].classList.contains('text-slate-600')) {
+                container.innerHTML = '';
+            }
+
+            const time = new Date().toLocaleTimeString();
+            let colorClass = 'text-slate-400';
+            let icon = 'info';
+            let label = 'Info';
+            let bgClass = 'bg-slate-700/30';
+
+            if (type === 'success') { colorClass = 'text-emerald-400'; icon = 'check-circle'; label = 'Sucesso'; bgClass = 'bg-emerald-500/10 border-emerald-500/20'; }
+            if (type === 'error') { colorClass = 'text-rose-400'; icon = 'x-circle'; label = 'Erro'; bgClass = 'bg-rose-500/10 border-rose-500/20'; }
+            if (type === 'warning') { colorClass = 'text-amber-400'; icon = 'clock'; label = 'Aguarde'; bgClass = 'bg-amber-500/10 border-amber-500/20'; }
+            if (type === 'system') { colorClass = 'text-purple-400'; icon = 'settings'; label = 'Sistema'; bgClass = 'bg-purple-500/10 border-purple-500/20'; }
+
+            const div = document.createElement('div');
+            div.className = `flex items-start gap-3 p-3 rounded-lg border hover:bg-slate-700/50 transition-colors fade-in ${bgClass} border-slate-700`;
+            div.innerHTML = `
+                <div class="mt-0.5 p-1.5 rounded-full shrink-0 bg-slate-800/50 ${colorClass}">
+                    <i data-lucide="${icon}" class="w-4 h-4"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex justify-between items-baseline mb-0.5">
+                        <span class="text-xs font-bold uppercase tracking-wide ${colorClass}">${label}</span>
+                        <span class="text-[10px] text-slate-500 font-mono">${time}</span>
+                    </div>
+                    <p class="text-sm text-slate-200 leading-tight break-words">${message}</p>
+                </div>
+            `;
+            
+            container.insertBefore(div, container.firstChild);
+            if(container.children.length > 100) container.lastChild.remove();
+            lucide.createIcons();
+        }
+
+        function clearLogs() {
+            document.getElementById('logs-container').innerHTML = `
+                <div class="h-full flex flex-col items-center justify-center text-slate-600 gap-2 opacity-50">
+                    <i data-lucide="activity" class="w-10 h-10"></i>
+                    <p class="text-sm">O histórico aparecerá aqui...</p>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function setRunningState(running) {
+            isRunning = running;
+            document.getElementById('btn-start').classList.toggle('hidden', running);
+            document.getElementById('btn-stop').classList.toggle('hidden', !running);
+            
+            const card = document.getElementById('status-card');
+            if (running) {
+                document.getElementById('status-idle').classList.add('hidden');
+                document.getElementById('status-running').classList.remove('hidden');
+                card.classList.replace('border-slate-700', 'border-blue-500/30');
+            } else {
+                card.classList.replace('border-blue-500/30', 'border-slate-700');
+            }
+        }
+
+        async function startCampaign() {
+            const contactsText = document.getElementById('contacts-input').value;
+            const contacts = contactsText.split(/[\n,;]+/).map(c => c.trim()).filter(c => c.length > 8);
+            
+            if (contacts.length === 0) {
+                addLog('error', 'Nenhum contato válido.');
+                switchTab('contacts');
+                return;
+            }
+            if (messageVariations.every(m => m.text.trim() === "")) {
+                addLog('error', 'Configure pelo menos uma mensagem.');
+                switchTab('messages');
+                return;
+            }
+
+            shouldStop = false;
+            setRunningState(true);
+            clearLogs();
+            addLog('system', `Iniciando campanha Segura para ${contacts.length} contatos.`);
+            if (fileUrl) addLog('system', `Anexo vinculado.`);
+
+            let sent = 0;
+            let failed = 0;
+            const total = contacts.length;
+            
+            const updateStats = () => {
+                document.getElementById('count-sent').innerText = sent;
+                document.getElementById('count-failed').innerText = failed;
+                document.getElementById('count-total').innerText = total;
+                const pct = Math.round(((sent + failed) / total) * 100);
+                document.getElementById('percent-complete').innerText = pct;
+                document.getElementById('progress-bar').style.width = `${pct}%`;
+            };
+            updateStats();
+
+            try {
+                for (let i = 0; i < total; i++) {
+                    if (shouldStop) throw new Error('Parado manualmente.');
+
+                    if (i > 0 && i % SAFE_BATCH_SIZE === 0) {
+                        const waitTimeMs = SAFE_BATCH_PAUSE_MINUTES * 60 * 1000;
+                        addLog('warning', `Pausa de segurança do Bloco (${SAFE_BATCH_PAUSE_MINUTES} min).`);
+                        
+                        const targetTime = Date.now() + waitTimeMs;
+                        while (Date.now() < targetTime) {
+                            if (shouldStop) throw new Error('Parado manualmente.');
+                            const remaining = Math.ceil((targetTime - Date.now()) / 1000);
+                            document.getElementById('next-action-text').innerText = `Bloco de Segurança: ${remaining}s`;
+                            await sleep(1000);
+                        }
+                        addLog('system', 'Retomando envio...');
+                    }
+
+                    const contact = contacts[i];
+                    const variation = messageVariations[i % messageVariations.length];
+
+                    addLog('info', `Enviando para ${contact}...`);
+                    document.getElementById('next-action-text').innerText = `Enviando para ${contact}`;
+
+                    try {
+                        const payload = {
+                            phone: contact,
+                            message: variation.text,
+                            variationId: variation.id,
+                            timestamp: new Date().toISOString(),
+                            fileUrl: fileUrl || null,
+                            fileName: uploadedFileName || null
+                        };
+
+                        await fetch(WEBHOOK_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        sent++;
+                        addLog('success', `Sucesso: ${contact}`);
+                    } catch (e) {
+                        console.error(e);
+                        failed++;
+                        addLog('error', `Falha: ${contact}`);
+                    }
+
+                    updateStats();
+
+                    if (i < total - 1) {
+                        const delayMs = SAFE_DELAY_SECONDS * 1000;
+                        const targetTime = Date.now() + delayMs;
+                        while (Date.now() < targetTime) {
+                            if (shouldStop) throw new Error('Parado manualmente.');
+                            const remaining = Math.ceil((targetTime - Date.now()) / 1000);
+                            document.getElementById('next-action-text').innerText = `Aguardando intervalo seguro: ${remaining}s`;
+                            await sleep(200);
+                        }
+                    }
+                }
+                
+                addLog('success', 'Campanha Finalizada!');
+                document.getElementById('next-action-text').innerText = 'Concluído';
+
+            } catch (err) {
+                if (err.message === 'Parado manualmente.') {
+                    addLog('warning', 'Interrompido pelo usuário.');
+                    document.getElementById('next-action-text').innerText = 'Parado';
+                } else {
+                    addLog('error', `Erro crítico: ${err.message}`);
+                }
+            } finally {
+                setRunningState(false);
+            }
+        }
+
+        function stopCampaign() {
+            shouldStop = true;
+        }
+
+    </script>
+</body>
+</html>
