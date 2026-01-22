@@ -143,15 +143,15 @@
                         <!-- Upload Anexo -->
                         <div class="space-y-2 pb-4 border-b border-slate-700">
                             <label class="text-sm font-medium text-slate-300 flex items-center gap-2">
-                                <i data-lucide="cloud" class="w-4 h-4"></i> Anexar PDF (Opcional)
+                                <i data-lucide="paperclip" class="w-4 h-4"></i> Anexar Arquivo (PDF ou Vídeo)
                             </label>
                             
                             <!-- Área de Upload -->
                             <div id="upload-area" onclick="document.getElementById('file-upload').click()" class="border-2 border-dashed border-slate-600 rounded-lg p-6 flex flex-col items-center justify-center text-slate-400 hover:border-blue-500 hover:bg-slate-800/50 cursor-pointer transition-all">
                                 <i data-lucide="upload" class="w-8 h-8 mb-2 text-slate-500"></i>
                                 <span class="text-sm font-medium" id="upload-text">Clique para selecionar arquivo</span>
-                                <span class="text-xs text-slate-600 mt-1">O arquivo será preparado automaticamente</span>
-                                <input type="file" id="file-upload" class="hidden" onchange="handleSupabaseUpload(this)">
+                                <span class="text-xs text-slate-600 mt-1">Suporta PDF e Vídeos MP4</span>
+                                <input type="file" id="file-upload" class="hidden" accept=".pdf,video/mp4,video/x-m4v,video/*,audio/mpeg" onchange="handleSupabaseUpload(this)">
                             </div>
 
                             <!-- Área de Arquivo Carregado (Hidden by default) -->
@@ -159,7 +159,7 @@
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center gap-3">
                                         <div class="bg-indigo-600/20 p-2 rounded">
-                                            <i data-lucide="file-text" class="text-indigo-400 w-5 h-5"></i>
+                                            <i id="file-icon" data-lucide="file-text" class="text-indigo-400 w-5 h-5"></i>
                                         </div>
                                         <div>
                                             <p id="file-name-display" class="text-sm text-white font-medium truncate max-w-[200px]">arquivo.pdf</p>
@@ -264,7 +264,10 @@
     <!-- SCRIPTS -->
     <script>
         // --- CONSTANTES ---
-        const WEBHOOK_URL = "https://criadordigital-n8n-webhook.zcepry.easypanel.host/webhook/saojudascont";
+        // WEBHOOK PADRÃO (TEXTO E PDF)
+        const WEBHOOK_URL_DEFAULT = "https://criadordigital-n8n-webhook.zcepry.easypanel.host/webhook/saojudascont";
+        // WEBHOOK PARA MÍDIA (VÍDEO/OUTROS)
+        const WEBHOOK_URL_MEDIA = "https://criadordigital-n8n-webhook.zcepry.easypanel.host/webhook/saojudascontmp3";
         
         // --- CREDENCIAIS SUPABASE HARDCODED ---
         const SUPABASE_URL = "https://fcibijetfwdmidytrily.supabase.co";
@@ -275,9 +278,9 @@
         const GROQ_API_KEY = "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";
 
         // --- CONFIGURAÇÃO DE SEGURANÇA (SAFE MODE) ---
-        const SAFE_DELAY_SECONDS = 60; 
+        const SAFE_DELAY_SECONDS = 25; 
         const SAFE_BATCH_SIZE = 15;
-        const SAFE_BATCH_PAUSE_MINUTES = 20;
+        const SAFE_BATCH_PAUSE_MINUTES = 3;
 
         // --- ESTADO GLOBAL ---
         let messageVariations = [
@@ -286,6 +289,7 @@
         ];
         let fileUrl = "";
         let uploadedFileName = "";
+        let uploadedFileType = ""; // Novo: para guardar o tipo do arquivo
         let isRunning = false;
         let shouldStop = false;
 
@@ -435,7 +439,7 @@
                 });
 
                 renderVariations();
-                addLog('success', '3 Variações geradas!');
+                addLog('success', '3 Variações profissionais geradas!');
 
             } catch (error) {
                 console.error(error);
@@ -569,6 +573,9 @@
             const file = input.files[0];
             if (!file) return;
 
+            // Salva o tipo do arquivo para decisão posterior do Webhook
+            uploadedFileType = file.type;
+
             const uploadText = document.getElementById('upload-text');
             const originalText = uploadText.innerText;
             uploadText.innerText = "Enviando para nuvem...";
@@ -606,6 +613,15 @@
                 document.getElementById('file-display').classList.remove('hidden');
                 document.getElementById('file-name-display').innerText = file.name;
 
+                // Set icon based on file type
+                const fileIcon = document.getElementById('file-icon');
+                if (file.type.startsWith('video/')) {
+                    fileIcon.setAttribute('data-lucide', 'play-circle');
+                } else {
+                    fileIcon.setAttribute('data-lucide', 'file-text');
+                }
+                lucide.createIcons();
+
                 addLog('success', 'Upload concluído!');
                 addLog('info', `Arquivo pronto.`);
 
@@ -622,6 +638,7 @@
         function clearAttachment() {
             fileUrl = "";
             uploadedFileName = "";
+            uploadedFileType = "";
             document.getElementById('upload-area').classList.remove('hidden');
             document.getElementById('file-display').classList.add('hidden');
             addLog('system', 'Anexo removido.');
@@ -763,7 +780,15 @@
                             fileName: uploadedFileName || null
                         };
 
-                        await fetch(WEBHOOK_URL, {
+                        // DECISÃO DE QUAL WEBHOOK USAR
+                        let targetWebhook = WEBHOOK_URL_DEFAULT;
+                        
+                        // Se tem arquivo E não é PDF (ex: video, audio, etc), usa o Webhook de Mídia
+                        if (fileUrl && uploadedFileType && !uploadedFileType.includes('pdf')) {
+                            targetWebhook = WEBHOOK_URL_MEDIA;
+                        }
+
+                        await fetch(targetWebhook, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(payload)
@@ -812,5 +837,4 @@
 
     </script>
 </body>
-
 </html>
