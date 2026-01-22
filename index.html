@@ -143,15 +143,15 @@
                         <!-- Upload Anexo -->
                         <div class="space-y-2 pb-4 border-b border-slate-700">
                             <label class="text-sm font-medium text-slate-300 flex items-center gap-2">
-                                <i data-lucide="paperclip" class="w-4 h-4"></i> Anexar Arquivo (PDF ou Vídeo)
+                                <i data-lucide="paperclip" class="w-4 h-4"></i> Anexar Arquivo (PDF, Vídeo ou Imagem)
                             </label>
                             
                             <!-- Área de Upload -->
                             <div id="upload-area" onclick="document.getElementById('file-upload').click()" class="border-2 border-dashed border-slate-600 rounded-lg p-6 flex flex-col items-center justify-center text-slate-400 hover:border-blue-500 hover:bg-slate-800/50 cursor-pointer transition-all">
                                 <i data-lucide="upload" class="w-8 h-8 mb-2 text-slate-500"></i>
                                 <span class="text-sm font-medium" id="upload-text">Clique para selecionar arquivo</span>
-                                <span class="text-xs text-slate-600 mt-1">Suporta PDF e Vídeos MP4</span>
-                                <input type="file" id="file-upload" class="hidden" accept=".pdf,video/mp4,video/x-m4v,video/*,audio/mpeg" onchange="handleSupabaseUpload(this)">
+                                <span class="text-xs text-slate-600 mt-1">Suporta PDF, Vídeos e Imagens</span>
+                                <input type="file" id="file-upload" class="hidden" accept=".pdf,video/mp4,video/x-m4v,video/*,audio/mpeg,image/png,image/jpeg,image/jpg,image/*" onchange="handleSupabaseUpload(this)">
                             </div>
 
                             <!-- Área de Arquivo Carregado (Hidden by default) -->
@@ -268,6 +268,8 @@
         const WEBHOOK_URL_DEFAULT = "https://criadordigital-n8n-webhook.zcepry.easypanel.host/webhook/saojudascont";
         // WEBHOOK PARA MÍDIA (VÍDEO/OUTROS)
         const WEBHOOK_URL_MEDIA = "https://criadordigital-n8n-webhook.zcepry.easypanel.host/webhook/saojudascontmp3";
+        // WEBHOOK PARA IMAGEM
+        const WEBHOOK_URL_IMAGE = "https://criadordigital-n8n-webhook.zcepry.easypanel.host/webhook/saojudascontimagem";
         
         // --- CREDENCIAIS SUPABASE HARDCODED ---
         const SUPABASE_URL = "https://fcibijetfwdmidytrily.supabase.co";
@@ -617,6 +619,8 @@
                 const fileIcon = document.getElementById('file-icon');
                 if (file.type.startsWith('video/')) {
                     fileIcon.setAttribute('data-lucide', 'play-circle');
+                } else if (file.type.startsWith('image/')) {
+                    fileIcon.setAttribute('data-lucide', 'image');
                 } else {
                     fileIcon.setAttribute('data-lucide', 'file-text');
                 }
@@ -783,9 +787,15 @@
                         // DECISÃO DE QUAL WEBHOOK USAR
                         let targetWebhook = WEBHOOK_URL_DEFAULT;
                         
-                        // Se tem arquivo E não é PDF (ex: video, audio, etc), usa o Webhook de Mídia
-                        if (fileUrl && uploadedFileType && !uploadedFileType.includes('pdf')) {
-                            targetWebhook = WEBHOOK_URL_MEDIA;
+                        // ROTEAMENTO:
+                        if (fileUrl && uploadedFileType) {
+                            if (uploadedFileType.includes('image')) {
+                                targetWebhook = WEBHOOK_URL_IMAGE;
+                            } else if (!uploadedFileType.includes('pdf')) {
+                                // Se não é imagem e não é PDF (ex: video, audio), vai pro media
+                                targetWebhook = WEBHOOK_URL_MEDIA;
+                            }
+                            // Se for PDF, cai no default
                         }
 
                         await fetch(targetWebhook, {
